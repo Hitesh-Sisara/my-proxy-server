@@ -1,5 +1,6 @@
 import express from "express";
 import fetch from "node-fetch";
+import url from "url"; // Import the URL module to help with parsing
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,11 +13,21 @@ app.use((req, res, next) => {
 
 // Proxy endpoint
 app.get("/api/proxy", async (req, res) => {
-  const url = req.query.url; // The 100ms API URL
+  const targetUrl = req.query.url; // The 100ms API URL
   const managementToken = req.query.token; // Management token if required
 
+  // Remove 'url' and 'token' from the query parameters
+  const { url: _, token: __, ...restQueryParams } = req.query;
+
+  // Construct the new query string from remaining query parameters
+  const queryString = new URLSearchParams(restQueryParams).toString();
+
+  // Check if the target URL already contains a query string
+  const separator = targetUrl.includes("?") ? "&" : "?";
+  const finalUrl = `${targetUrl}${separator}${queryString}`;
+
   try {
-    const response = await fetch(url, {
+    const response = await fetch(finalUrl, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${managementToken}`,
